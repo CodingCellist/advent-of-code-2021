@@ -20,13 +20,17 @@ loop n1 n2 n3 count =
 
 main : IO ()
 main =
-  do Right l <- fGetLine stdin
+  do Right l1 <- fGetLine stdin
        | Left err => die $ show err
-     (Just n1) <- pure $ parsePositive l
+     Right l2 <- fGetLine stdin
+       | Left err => die $ show err
+     Right l3 <- fGetLine stdin
+       | Left err => die $ show err
+     (Just n1) <- pure $ parsePositive l1
        | Nothing => die "No initial integer."
-     (Just n2) <- pure $ parsePositive l
+     (Just n2) <- pure $ parsePositive l2
        | Nothing => die "No second integer."
-     (Just n3) <- pure $ parsePositive l
+     (Just n3) <- pure $ parsePositive l3
        | Nothing => die "No third integer."
      res <- loop n1 n2 n3 0
      putStrLn $ "#increases: " ++ show res
