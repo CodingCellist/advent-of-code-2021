@@ -1,6 +1,8 @@
 #include <iostream> 
 #include <string>
 #include <cmath>
+#include <list>
+#include <algorithm>    // std::copy_if
 
 using namespace std;
 
@@ -29,19 +31,63 @@ unsigned int calcGamma(int (&is)[NBITS], int (&os)[NBITS]) {
   return gamma;
 }
 
+string findOxygenRating(list<string> &entries, int (&is)[NBITS], int (&os)[NBITS]) {
+  list<string> filtered(entries);    // list to store the matching values in
+
+  for (int pos = 0; pos < NBITS; pos++) {
+    char mostCommon = is[pos] >= os[pos] ? '1' : '0';
+    // remove entries that don't have the most common digit at that position
+    filtered.remove_if(
+        [pos, mostCommon](string entry) { return entry[pos] != mostCommon; }
+        );
+    // if we have only one entry, we're done
+    if (filtered.size() == 1) return filtered.front();
+  }
+  return "";
+}
+
+string findCO2Rating(list<string> &entries, int (&is)[NBITS], int (&os)[NBITS]) {
+  list<string> filtered(entries);    // list to store the matching values in
+
+  for (int pos = 0; pos < NBITS; pos++) {
+    char leastCommon = is[pos] < os[pos] ? '1' : '0';
+    // remove entries that don't have the most common digit at that position
+    filtered.remove_if(
+        [pos, leastCommon](string entry) { return entry[pos] != leastCommon; }
+        );
+    // if we have only one entry, we're done
+    if (filtered.size() == 1) return filtered.front();
+  }
+  return "";
+}
+
 int main() {
   string entry;
   // each element corresponds to the #bits at that position
   int ones[NBITS]  = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
   int zeroes[NBITS] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
+  list<string> entries;
+
   while (cin >> entry) {
     accCount(ones, zeroes, entry);
+    entries.push_back(entry);
   }
 
+  // PART 1
   unsigned int gamma = calcGamma(ones, zeroes);
   unsigned int epsilon = (gamma ^ ((1u << NBITS) - 1));   // I love C/C++  ^^
 
   cout << "Part 1: " << gamma * epsilon << "\n";
+
+  // PART 2
+  string ogr = findOxygenRating(entries, ones, zeroes);
+  string csr = findCO2Rating(entries, ones, zeroes);
+  if (ogr == "" || csr == "") {
+    cout << "ERROR: Couldn't find at least one rating.\n";
+    return 1;
+  }
+  unsigned long lifeSupportRating = stoul(ogr, nullptr, 2) * stoul(csr, nullptr, 2);
+  cout << "Part 2: " << lifeSupportRating << "\n";
 }
 
