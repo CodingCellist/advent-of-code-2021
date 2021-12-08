@@ -83,21 +83,54 @@ findWinningBoard boards =
          []       => Nothing
          (b :: _) => Just b
 
+updateAffectedBoards : (boards : List BingoBoard) -> (n : Nat) -> List BingoBoard
+updateAffectedBoards [] n = []
+updateAffectedBoards (b :: bs) n =
+   case call b n of
+        Nothing => b :: updateAffectedBoards bs n
+        (Just b') => b' :: updateAffectedBoards bs n
+
+
+------------
+-- PART 1 --
+------------
+
 ||| Find the score of the first board which would win
 solvePart1 : (called : List Nat) -> (boards : List BingoBoard) -> Maybe Nat
 solvePart1 [] boards = Nothing
 solvePart1 (n :: ns) boards =
-   do boards' <- pure $ helper boards n
+   do boards' <- pure $ updateAffectedBoards boards n
       case findWinningBoard boards' of
            Nothing => solvePart1 ns boards'
            (Just b) => Just $ calcScore b n
-   where
-      helper : List BingoBoard -> Nat -> List BingoBoard
-      helper [] k = []
-      helper (b :: bs) k =
-         case call b k of
-              Nothing => b :: helper bs k
-              (Just b') => b' :: helper bs k
+
+
+------------
+-- PART 2 --
+------------
+
+||| Find the last board which would win
+solvePart2 : (called : List Nat) -> (boards : List BingoBoard) -> Maybe Nat
+solvePart2 [] _ = Nothing
+solvePart2 _ [] = Nothing
+
+-- if we have a single board, check if it's the last to win
+solvePart2 (n :: ns) (b :: []) =
+  do b' <- call b n
+     if hasWon b'
+        then Just $ calcScore b' n
+        -- keep calling numbers until the board wins or we run out of numbers
+        else solvePart2 ns [b']
+
+-- if we have more than one board, update+filter them, and recurse on the result
+solvePart2 (n :: ns) boards =
+   do -- only keep the boards which haven't won after an update
+      boards' <- pure $ filter (not . hasWon) (updateAffectedBoards boards n)
+      case boards' of
+           (b :: []) =>
+                if (hasWon b) then Just (calcScore b n) else solvePart2 ns boards'
+           _ => solvePart2 ns boards'
+
 
 --------------------
 -- PARSING + MAIN --
@@ -146,6 +179,8 @@ main =
         | Nothing => die "main: parseCalledNumbers returned `Nothing`."
      part1Res <- pure $ solvePart1 calls boards
      putStrLn $ "Part 1: " ++ show part1Res
+     part2Res <- pure $ solvePart2 calls boards
+     putStrLn $ "Part 2: " ++ show part2Res
   where
     partial
     readBoards : (acc : List BingoBoard) -> IO (List BingoBoard)
